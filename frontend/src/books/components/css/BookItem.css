@@ -1,0 +1,42 @@
+.book-item {
+  margin: 1rem 0;
+}
+
+.book-item__content {
+  padding: 0;
+}
+
+.book-item__info {
+  padding: 1rem;
+  text-align: center;
+}
+
+.book-item__info h2,
+.book-item__info h3,
+.book-item__info p {
+  margin: 0 0 0.5rem 0;
+}
+
+.book-item__actions {
+  padding: 1rem;
+  text-align: center;
+  border-top: 1px solid #ccc;
+}
+
+.book-item__modal-content {
+  padding: 0;
+}
+
+.book-item__modal-actions {
+  text-align: right;
+}
+
+.book-item__actions button,
+.book-item__actions a {
+  margin: 0.5rem;
+}
+
+.map-container {
+  height: 15rem;
+  width: 100%;
+}
