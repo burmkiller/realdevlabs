@@ -32,12 +32,12 @@ const getReservationById = async (req, res, next) => {
 };
 
 const getReservationsByUserId = async (req, res, next) => {
-  const userId = req.params.uid;
+  const user = req.params.uid;
 
   // let reservations;
   let userWithReservations;
   try {
-    userWithReservations = await User.findById(userId).populate('reservations');
+    userWithReservations = await User.findById(user).populate('reservations');
   } catch (err) {
     const error = new HttpError(
       'Fetching reservations failed, please try again later',
@@ -68,31 +68,29 @@ const createReservation = async (req, res, next) => {
     );
   }
 
-  const { title, author, date, creator } = req.body;
+  const { title, author, date, user } = req.body;
+  const existingReservation = await Reservation.findOne({ title, author });
 
-  let coordinates;
-  try {
-    coordinates = await getCoordsForAddress(address);
-  } catch (error) {
+  if(existingReservation) {
+    const error = new HttpError('Book already reserved', 202);
     return next(error);
   }
-
   const createdReservation = new Reservation({
     title,
     author,
     date,
-    creator
+    user
   });
 
-  let user;
+  let reservedUser;
   try {
-    user = await User.findById(creator);
+    reservedUser = await User.findById(mongoose.Types.ObjectId(user));
   } catch (err) {
     const error = new HttpError('Creating reservation failed, please try again', 500);
     return next(error);
   }
 
-  if (!user) {
+  if (!reservedUser) {
     const error = new HttpError('Could not find user for provided id', 404);
     return next(error);
   }
@@ -101,10 +99,11 @@ const createReservation = async (req, res, next) => {
     const sess = await mongoose.startSession();
     sess.startTransaction();
     await createdReservation.save({ session: sess });
-    user.reservations.push(createdReservation);
-    await user.save({ session: sess });
+    reservedUser.reservations.push(createdReservation);
+    await reservedUser.save({ session: sess });
     await sess.commitTransaction();
   } catch (err) {
+    console.log(err);
     const error = new HttpError(
       'Creating reservation failed, please try again.',
       500
@@ -158,7 +157,7 @@ const deleteReservation = async (req, res, next) => {
 
   let reservation;
   try {
-    reservation = await Reservation.findById(reservationId).populate('creator');
+    reservation = await Reservation.findById(reservationId).populate('user');
   } catch (err) {
     const error = new HttpError(
       'Something went wrong, could not delete reservation.',
@@ -176,8 +175,8 @@ const deleteReservation = async (req, res, next) => {
     const sess = await mongoose.startSession();
     sess.startTransaction();
     await reservation.remove({ session: sess });
-    reservation.creator.reservations.pull(reservation);
-    await reservation.creator.save({ session: sess });
+    reservation.user.reservations.pull(reservation);
+    await reservation.user.save({ session: sess });
     await sess.commitTransaction();
   } catch (err) {
     const error = new HttpError(
